@@ -119,6 +119,14 @@ function shuffle(arr) {
   return a;
 }
 
+const BOT_PHRASES = [
+  '我觉得有人在撒谎...', '昨晚的信息很可疑', '我是好人，相信我',
+  '我们应该仔细讨论一下', '有人要提名吗？', '这局好难啊',
+  '我怀疑坐在角落的那个人', '大家说说自己的信息吧', '我同意这个提名',
+  '我觉得不应该处决他', '我的能力显示没有问题', '有点慌...',
+  '说书人给的信息我需要想想', '我是镇民，不用怀疑我', '感觉邪恶藏得很深',
+];
+
 // ============== Socket.IO ==============
 
 io.on('connection', (socket) => {
@@ -178,6 +186,47 @@ io.on('connection', (socket) => {
     socket.emit('rolesSelected', selected);
   });
 
+  // 添加AI机器人
+  socket.on('addBots', ({ count }) => {
+    const room = getRoom(currentRoom);
+    if (!room || room.storyteller.socketId !== socket.id) return;
+    if (room.phase !== 'lobby') return;
+
+    const currentBotCount = room.players.filter(p => p.isBot).length;
+    for (let i = 0; i < count; i++) {
+      const botNum = currentBotCount + i + 1;
+      const botId = `bot-${room.code}-${botNum}`;
+      room.players.push({ socketId: botId, name: `机器人${botNum}`, isBot: true });
+    }
+
+    io.to(currentRoom).emit('playerList', {
+      players: room.players.map(p => ({ name: p.name, id: p.socketId, isBot: p.isBot })),
+      storyteller: room.storyteller.name
+    });
+  });
+
+  // 一键填满机器人
+  socket.on('fillBots', ({ target }) => {
+    const room = getRoom(currentRoom);
+    if (!room || room.storyteller.socketId !== socket.id) return;
+    if (room.phase !== 'lobby') return;
+
+    const needed = (target || 8) - room.players.length;
+    if (needed <= 0) return socket.emit('error', '玩家已足够');
+
+    const currentBotCount = room.players.filter(p => p.isBot).length;
+    for (let i = 0; i < needed; i++) {
+      const botNum = currentBotCount + i + 1;
+      const botId = `bot-${room.code}-${botNum}`;
+      room.players.push({ socketId: botId, name: `机器人${botNum}`, isBot: true });
+    }
+
+    io.to(currentRoom).emit('playerList', {
+      players: room.players.map(p => ({ name: p.name, id: p.socketId, isBot: p.isBot })),
+      storyteller: room.storyteller.name
+    });
+  });
+
   // 分配角色并开始游戏
   socket.on('startGame', () => {
     const room = getRoom(currentRoom);
@@ -198,8 +247,8 @@ io.on('connection', (socket) => {
     room.phase = 'night';
     room.nightNum = 1;
 
-    // 通知每个玩家自己的角色
-    room.players.forEach(p => {
+    // 通知每个玩家自己的角色（跳过机器人）
+    room.players.filter(p => !p.isBot).forEach(p => {
       const roleId = room.assignments[p.socketId];
       const role = ALL_ROLES.find(r => r.id === roleId);
       io.to(p.socketId).emit('gameStarted', { role, phase: 'night', nightNum: 1 });
@@ -223,8 +272,8 @@ io.on('connection', (socket) => {
       const role = ALL_ROLES.find(r => r.id === room.assignments[p.socketId]);
       return role && role.type === 'demon';
     });
-    // 爪牙知道恶魔是谁
-    evilPlayers.forEach(p => {
+    // 爪牙知道恶魔是谁（跳过机器人）
+    evilPlayers.filter(p => !p.isBot).forEach(p => {
       const role = ALL_ROLES.find(r => r.id === room.assignments[p.socketId]);
       if (role.type === 'minion') {
         const evilInfo = evilPlayers.map(ep => ({
@@ -235,7 +284,7 @@ io.on('connection', (socket) => {
       }
     });
     // 恶魔知道爪牙和三个不在场的善良角色
-    if (demon) {
+    if (demon && !demon.isBot) {
       const evilInfo = evilPlayers.map(ep => ({
         name: ep.name,
         role: ALL_ROLES.find(r => r.id === room.assignments[ep.socketId]).name,
@@ -329,6 +378,24 @@ io.on('connection', (socket) => {
       alivePlayers: aliveList,
     });
 
+    // 机器人白天聊天
+    room.players.filter(p => p.isBot && room.alive[p.socketId]).forEach((bot, i) => {
+      const delays = [3000, 6000, 10000, 15000, 20000];
+      delays.forEach((base, j) => {
+        if (Math.random() > 0.5) return; // 50% chance to speak
+        setTimeout(() => {
+          if (room.phase !== 'day') return;
+          const msg = BOT_PHRASES[Math.floor(Math.random() * BOT_PHRASES.length)];
+          io.to(currentRoom).emit('chatMessage', {
+            from: bot.name,
+            message: msg,
+            isStoryteller: false,
+            time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          });
+        }, base + Math.random() * 3000 + i * 2000);
+      });
+    });
+
     // 检查胜负
     checkWinCondition(room);
   });
@@ -393,6 +460,20 @@ io.on('connection', (socket) => {
       target: targetName,
       targetId,
       aliveCount: getAliveCount(room),
+    });
+
+    // 机器人自动投票
+    room.players.filter(p => p.isBot && room.alive[p.socketId]).forEach((bot, i) => {
+      setTimeout(() => {
+        const vote = Math.random() > 0.4; // 60% chance to vote yes
+        room.votes[bot.socketId] = vote;
+        io.to(room.storyteller.socketId).emit('voteProgress', {
+          player: bot.name,
+          vote,
+          totalVotes: Object.keys(room.votes).length,
+          neededVotes: room.players.length,
+        });
+      }, 1000 + i * 500);
     });
   });
 

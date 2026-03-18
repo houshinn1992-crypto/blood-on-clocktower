@@ -204,6 +204,118 @@ input[type=text]::placeholder{color:#666}
       <input type="text" id="roomCodeInput" placeholder="输入4位房间号" maxlength="4">
     </div>
     <button class="btn btn-secondary" onclick="joinRoom()">加入房间（玩家）</button>
+    <button class="btn btn-gold" onclick="showRules()" style="margin-top:16px">📖 规则介绍</button>
+  </div>
+</div>
+
+<!-- ====== 规则介绍 ====== -->
+<div id="rulesPage" class="page hidden" style="max-width:600px">
+  <button class="btn btn-secondary btn-sm" onclick="hideRules()" style="margin-bottom:16px">← 返回</button>
+  <h1 style="color:var(--accent);margin-bottom:8px;font-size:28px">血染钟楼</h1>
+  <h2 style="color:var(--gold);margin-bottom:20px;font-size:18px">暗流涌动 · 规则介绍</h2>
+
+  <div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">
+    <h3 style="color:var(--gold);margin-bottom:8px">🎯 游戏目标</h3>
+    <p style="font-size:14px;line-height:1.8;color:var(--muted)">
+      血染钟楼是一款社交推理游戏，分为<span style="color:var(--good)">善良阵营</span>和<span style="color:var(--evil)">邪恶阵营</span>。
+      善良方需要找出并处决<span style="color:var(--evil)">恶魔</span>，邪恶方需要存活到最后。
+    </p>
+  </div>
+
+  <div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">
+    <h3 style="color:var(--gold);margin-bottom:8px">👥 角色阵营</h3>
+    <div style="font-size:14px;line-height:2;color:var(--muted)">
+      <p><span style="color:var(--good)">镇民</span> — 善良阵营主力，拥有各种信息获取能力</p>
+      <p><span style="color:var(--good)">外来者</span> — 善良阵营，但能力可能对善良方不利</p>
+      <p><span style="color:var(--evil)">爪牙</span> — 邪恶阵营，辅助恶魔隐藏身份</p>
+      <p><span style="color:var(--evil)">恶魔</span> — 邪恶阵营核心，每晚杀死一名玩家</p>
+    </div>
+  </div>
+
+  <div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">
+    <h3 style="color:var(--gold);margin-bottom:8px">🌙 游戏流程</h3>
+    <div style="font-size:14px;line-height:2;color:var(--muted)">
+      <p><strong style="color:var(--text)">夜晚阶段：</strong></p>
+      <p>• 所有人闭眼，说书人按顺序唤醒有能力的角色</p>
+      <p>• 被唤醒的角色执行自己的能力（选择目标、获取信息等）</p>
+      <p>• 恶魔选择一名玩家杀死</p>
+      <p style="margin-top:8px"><strong style="color:var(--text)">白天阶段：</strong></p>
+      <p>• 说书人宣布昨晚的死亡信息</p>
+      <p>• 所有存活玩家自由讨论</p>
+      <p>• 任何人可以提名一名玩家接受投票</p>
+      <p>• 超过半数赞成票则该玩家被处决</p>
+    </div>
+  </div>
+
+  <div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">
+    <h3 style="color:var(--gold);margin-bottom:8px">🏆 胜利条件</h3>
+    <div style="font-size:14px;line-height:2;color:var(--muted)">
+      <p><span style="color:var(--good)">善良获胜：</span>恶魔被处决</p>
+      <p><span style="color:var(--evil)">邪恶获胜：</span>仅剩2名玩家存活（含恶魔）</p>
+      <p>特殊：圣徒被处决 → 邪恶获胜</p>
+      <p>特殊：市长存活到最后3人且无人处决 → 善良获胜</p>
+    </div>
+  </div>
+
+  <div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">
+    <h3 style="color:var(--gold);margin-bottom:8px">📋 人数配置</h3>
+    <table style="width:100%;font-size:13px;color:var(--muted);border-collapse:collapse">
+      <tr style="border-bottom:1px solid #333"><th style="padding:6px;text-align:left;color:var(--text)">人数</th><th style="color:var(--good)">镇民</th><th style="color:var(--good)">外来者</th><th style="color:var(--evil)">爪牙</th><th style="color:var(--evil)">恶魔</th></tr>
+      <tr style="border-bottom:1px solid #222"><td style="padding:6px">8人</td><td>5</td><td>1</td><td>1</td><td>1</td></tr>
+      <tr style="border-bottom:1px solid #222"><td style="padding:6px">9人</td><td>5</td><td>2</td><td>1</td><td>1</td></tr>
+      <tr style="border-bottom:1px solid #222"><td style="padding:6px">10人</td><td>7</td><td>0</td><td>2</td><td>1</td></tr>
+      <tr style="border-bottom:1px solid #222"><td style="padding:6px">11人</td><td>7</td><td>1</td><td>2</td><td>1</td></tr>
+      <tr><td style="padding:6px">12人</td><td>7</td><td>2</td><td>2</td><td>1</td></tr>
+    </table>
+  </div>
+
+  <div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">
+    <h3 style="color:var(--gold);margin-bottom:8px">🎭 角色详解（暗流涌动）</h3>
+    <h4 style="color:var(--good);margin:12px 0 8px;font-size:14px">镇民</h4>
+    <div style="font-size:13px;line-height:2;color:var(--muted)">
+      <p>🧺 <strong>洗衣妇</strong> — 得知两名玩家中的一名是某个特定的镇民</p>
+      <p>📚 <strong>图书管理员</strong> — 得知两名玩家中的一名是某个特定的外来者</p>
+      <p>🔍 <strong>调查员</strong> — 得知两名玩家中的一名是某个特定的爪牙</p>
+      <p>👨‍🍳 <strong>厨师</strong> — 得知有多少对邪恶玩家相邻而坐</p>
+      <p>💓 <strong>共情者</strong> — 每晚得知相邻存活玩家中有多少是邪恶的</p>
+      <p>🔮 <strong>占卜师</strong> — 每晚选两人，得知其中是否有恶魔</p>
+      <p>🙏 <strong>僧侣</strong> — 每晚选一人保护其不被恶魔杀死</p>
+      <p>⚰️ <strong>掘墓人</strong> — 每晚得知今天被处决玩家的角色</p>
+      <p>👰 <strong>处女</strong> — 第一次被镇民提名时，该镇民被处决</p>
+      <p>🔫 <strong>杀手</strong> — 一次机会射击，若是恶魔则死亡</p>
+      <p>🛡️ <strong>士兵</strong> — 不会被恶魔杀死</p>
+      <p>🎩 <strong>市长</strong> — 最后3人且无处决时善良获胜</p>
+      <p>🐦 <strong>守鸦人</strong> — 夜晚死亡时可选一人得知其角色</p>
+    </div>
+    <h4 style="color:var(--good);margin:12px 0 8px;font-size:14px">外来者</h4>
+    <div style="font-size:13px;line-height:2;color:var(--muted)">
+      <p>🤵 <strong>管家</strong> — 每晚选一人，只有该人投票时你才能投</p>
+      <p>🍺 <strong>酒鬼</strong> — 以为自己是镇民但不是，能力无效</p>
+      <p>🏚️ <strong>隐士</strong> — 可能被探测为邪恶角色</p>
+      <p>😇 <strong>圣徒</strong> — 被处决则邪恶获胜</p>
+    </div>
+    <h4 style="color:var(--evil);margin:12px 0 8px;font-size:14px">爪牙</h4>
+    <div style="font-size:13px;line-height:2;color:var(--muted)">
+      <p>☠️ <strong>下毒者</strong> — 每晚选一人使其中毒（能力无效）</p>
+      <p>🕵️ <strong>间谍</strong> — 每晚查看魔典，可能被探测为善良</p>
+      <p>👑 <strong>男爵</strong> — 场上多出两名外来者</p>
+      <p>💃 <strong>猩红女郎</strong> — 恶魔死亡且≥5人时变为恶魔</p>
+    </div>
+    <h4 style="color:var(--evil);margin:12px 0 8px;font-size:14px">恶魔</h4>
+    <div style="font-size:13px;line-height:2;color:var(--muted)">
+      <p>👿 <strong>小鬼</strong> — 每晚杀一人，自杀则爪牙变为小鬼</p>
+    </div>
+  </div>
+
+  <div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">
+    <h3 style="color:var(--gold);margin-bottom:8px">💡 新手技巧</h3>
+    <div style="font-size:14px;line-height:2;color:var(--muted)">
+      <p>• 善良方要积极分享自己获得的信息</p>
+      <p>• 邪恶方可以假装自己是某个善良角色</p>
+      <p>• 注意观察谁的发言前后矛盾</p>
+      <p>• 说书人的信息不一定完全可信（可能有酒鬼、下毒者干扰）</p>
+      <p>• 不要急于处决，错杀好人对善良方很不利</p>
+    </div>
   </div>
 </div>
 
@@ -228,6 +340,15 @@ input[type=text]::placeholder{color:#666}
     <div style="margin-bottom:12px">
       <button class="btn btn-gold btn-sm" onclick="autoSelect()">自动推荐</button>
       <button class="btn btn-secondary btn-sm" onclick="clearRoles()">清空</button>
+    </div>
+    <div style="background:#1a1a4e;border-radius:8px;padding:12px;margin-bottom:12px">
+      <div style="color:#7b68ee;font-size:13px;font-weight:700;margin-bottom:8px">🤖 AI机器人（测试用）</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-sm" style="background:#2d1b4e;color:#dda0dd;border:1px solid #4a2d6e" onclick="socket.emit('fillBots',{target:8})">填满8人</button>
+        <button class="btn btn-sm" style="background:#2d1b4e;color:#dda0dd;border:1px solid #4a2d6e" onclick="socket.emit('fillBots',{target:10})">填满10人</button>
+        <button class="btn btn-sm" style="background:#2d1b4e;color:#dda0dd;border:1px solid #4a2d6e" onclick="socket.emit('fillBots',{target:12})">填满12人</button>
+        <button class="btn btn-sm" style="background:#2d1b4e;color:#dda0dd;border:1px solid #4a2d6e" onclick="socket.emit('addBots',{count:1})">+1机器人</button>
+      </div>
     </div>
     <div class="role-category">
       <div class="role-category-title"><span>镇民 (善良)</span><span id="townsfolkCount">0</span></div>
@@ -406,6 +527,14 @@ function getRoleEmoji(id){
 }
 
 // ============== 首页逻辑 ==============
+function showRules(){
+  document.getElementById('homePage').classList.add('hidden');
+  document.getElementById('rulesPage').classList.remove('hidden');
+}
+function hideRules(){
+  document.getElementById('rulesPage').classList.add('hidden');
+  document.getElementById('homePage').classList.remove('hidden');
+}
 function showCreate(){
   const name=document.getElementById('nameInput').value.trim();
   if(!name) return toast('请输入昵称');
@@ -448,7 +577,7 @@ socket.on('playerList',({players,storyteller})=>{
   document.getElementById('playerCount').textContent=`${players.length}/12 玩家`;
   const list=document.getElementById('lobbyPlayerList');
   list.innerHTML=`<div class="player-item"><span class="name">${storyteller}</span><span class="badge" style="background:var(--accent)">说书人</span></div>`+
-    players.map(p=>`<div class="player-item"><span class="name">${p.name}</span></div>`).join('');
+    players.map(p=>`<div class="player-item"><span class="name">${p.name}</span>${p.isBot?'<span class="badge" style="background:#7b68ee;font-size:10px">🤖 AI</span>':''}</div>`).join('');
   updateRoleCountDisplay();
 });
 
