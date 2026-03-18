@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>血染钟楼 - 暗流涌动</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a1a2e;--card:#16213e;--accent:#e94560;--gold:#f5a623;--green:#27ae60;--blue:#2980b9;--text:#eee;--muted:#888;--evil:#c0392b;--good:#2ecc71}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.hidden{display:none!important}
+
+/* 通用按钮 */
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:15px;cursor:pointer;transition:.2s;font-weight:600}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#c73e54}
+.btn-secondary{background:var(--card);color:var(--text);border:1px solid #333}
+.btn-success{background:var(--green);color:#fff}
+.btn-danger{background:var(--evil);color:#fff}
+.btn-gold{background:var(--gold);color:#1a1a2e}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* 输入框 */
+input[type=text]{padding:12px 16px;border:1px solid #333;border-radius:8px;background:#0f3460;color:#fff;font-size:16px;width:100%;outline:none}
+input[type=text]:focus{border-color:var(--accent)}
+input[type=text]::placeholder{color:#666}
+
+/* 页面容器 */
+.page{max-width:480px;margin:0 auto;padding:20px}
+
+/* ====== 首页 ====== */
+#homePage{text-align:center;padding-top:60px}
+.logo{font-size:42px;font-weight:900;color:var(--accent);text-shadow:0 0 30px rgba(233,69,96,.3);margin-bottom:8px}
+.subtitle{color:var(--gold);font-size:16px;margin-bottom:40px}
+.home-actions{display:flex;flex-direction:column;gap:12px;max-width:300px;margin:0 auto}
+.home-actions .btn{width:100%;padding:14px;font-size:17px}
+.input-group{margin-bottom:12px}
+.input-group label{display:block;text-align:left;margin-bottom:6px;color:var(--muted);font-size:13px}
+
+/* ====== 大厅 ====== */
+#lobbyPage .room-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.room-code{font-size:28px;font-weight:900;color:var(--gold);letter-spacing:4px}
+.room-code-label{font-size:12px;color:var(--muted)}
+.player-list{background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px}
+.player-list h3{margin-bottom:12px;color:var(--gold);font-size:14px}
+.player-item{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #1a1a2e}
+.player-item:last-child{border:none}
+.player-item .name{flex:1}
+.player-item .badge{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--accent);color:#fff}
+.player-count{color:var(--muted);font-size:13px}
+
+/* 角色选择 */
+.role-selector{background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px}
+.role-selector h3{margin-bottom:12px;color:var(--gold);font-size:14px}
+.role-category{margin-bottom:12px}
+.role-category-title{font-size:13px;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between}
+.role-grid{display:flex;flex-wrap:wrap;gap:6px}
+.role-chip{padding:5px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1px solid #333;background:transparent;color:var(--text);transition:.2s;user-select:none}
+.role-chip.selected{border-color:var(--gold);background:rgba(245,166,35,.15);color:var(--gold)}
+.role-chip.good{border-color:rgba(46,204,113,.3)}
+.role-chip.good.selected{border-color:var(--good);background:rgba(46,204,113,.15);color:var(--good)}
+.role-chip.evil{border-color:rgba(192,57,43,.3)}
+.role-chip.evil.selected{border-color:var(--evil);background:rgba(192,57,43,.15);color:var(--evil)}
+.role-chip:hover{transform:scale(1.05)}
+
+/* ====== 游戏主界面 ====== */
+#gamePage{max-width:100%;padding:0}
+.game-header{background:var(--card);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;border-bottom:1px solid #333}
+.phase-badge{padding:4px 12px;border-radius:12px;font-size:13px;font-weight:700}
+.phase-night{background:#1a1a4e;color:#7b68ee}
+.phase-day{background:#4a3800;color:var(--gold)}
+.my-role{font-size:12px;color:var(--muted)}
+.my-role span{color:var(--gold);font-weight:700}
+
+/* 选项卡 */
+.tabs{display:flex;background:var(--card);border-bottom:1px solid #333;overflow-x:auto}
+.tab{padding:10px 16px;font-size:13px;cursor:pointer;color:var(--muted);white-space:nowrap;position:relative;transition:.2s}
+.tab.active{color:var(--accent)}
+.tab.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent)}
+.tab .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;margin-left:4px;vertical-align:middle}
+
+/* 面板 */
+.panel{padding:12px 16px;flex:1;overflow-y:auto}
+.game-content{display:flex;flex-direction:column;height:calc(100vh - 95px)}
+
+/* 聊天 */
+.chat-messages{flex:1;overflow-y:auto;padding-bottom:12px}
+.chat-msg{margin-bottom:8px;padding:8px 12px;border-radius:8px;background:var(--card);font-size:14px}
+.chat-msg .sender{font-weight:700;color:var(--gold);margin-right:6px}
+.chat-msg .sender.storyteller{color:var(--accent)}
+.chat-msg .time{font-size:11px;color:var(--muted);float:right}
+.chat-msg.system{background:transparent;color:var(--muted);font-style:italic;text-align:center;font-size:13px}
+.chat-msg.private{background:#2d1b4e;border-left:3px solid #9b59b6}
+.chat-input{display:flex;gap:8px;padding:8px 16px;background:var(--card);border-top:1px solid #333}
+.chat-input input{flex:1}
+.chat-input .btn{padding:10px 16px}
+
+/* 玩家圆环 */
+.player-circle{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:16px}
+.player-token{width:70px;text-align:center;cursor:pointer;transition:.2s}
+.player-token:hover{transform:scale(1.1)}
+.player-token .avatar{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 4px;border:2px solid #333;position:relative}
+.player-token .avatar.alive{border-color:var(--green);background:rgba(46,204,113,.1)}
+.player-token .avatar.dead{border-color:#666;background:rgba(100,100,100,.1);opacity:.5}
+.player-token .avatar.evil-glow{border-color:var(--evil);box-shadow:0 0 10px rgba(192,57,43,.3)}
+.player-token .pname{font-size:11px;word-break:break-all}
+.player-token .prole{font-size:10px;color:var(--muted)}
+.dead-mark{position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--evil);border-radius:50%;font-size:12px;line-height:20px;text-align:center}
+
+/* 投票 */
+.vote-panel{background:var(--card);border-radius:12px;padding:16px;margin:12px 16px}
+.vote-panel h3{color:var(--gold);margin-bottom:12px;font-size:15px}
+.vote-buttons{display:flex;gap:12px;justify-content:center;margin-top:12px}
+.vote-buttons .btn{min-width:100px;font-size:16px;padding:12px}
+.vote-result{text-align:center;padding:12px;font-size:15px}
+
+/* 夜晚界面 */
+.night-panel{text-align:center;padding:30px 16px}
+.night-panel .moon{font-size:60px;margin-bottom:16px}
+.night-panel h2{color:#7b68ee;margin-bottom:8px}
+.night-panel p{color:var(--muted);font-size:14px}
+.night-action{background:var(--card);border-radius:12px;padding:16px;margin-top:16px}
+.night-action h4{color:var(--gold);margin-bottom:8px}
+
+/* 说书人控制面板 */
+.st-controls{background:var(--card);border-radius:12px;padding:16px;margin:12px 16px}
+.st-controls h3{color:var(--accent);margin-bottom:12px;font-size:14px}
+.st-btn-grid{display:flex;flex-wrap:wrap;gap:8px}
+.st-btn-grid .btn{font-size:12px;padding:6px 10px}
+
+/* 魔典 */
+.grimoire{background:#1a0a2e;border-radius:12px;padding:16px;margin:12px 16px;border:1px solid #2d1b4e}
+.grimoire h3{color:#9b59b6;margin-bottom:12px}
+.grimoire-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #2d1b4e;font-size:13px}
+.grimoire-item:last-child{border:none}
+.grimoire-item .role-tag{padding:2px 8px;border-radius:8px;font-size:11px}
+.grimoire-item .role-tag.good{background:rgba(46,204,113,.15);color:var(--good)}
+.grimoire-item .role-tag.evil{background:rgba(192,57,43,.15);color:var(--evil)}
+.grimoire-item .status{font-size:11px}
+.grimoire-item .status.alive{color:var(--green)}
+.grimoire-item .status.dead{color:var(--evil)}
+
+/* 私聊列表 */
+.pm-list{padding:8px 0}
+.pm-item{display:flex;align-items:center;padding:10px 12px;cursor:pointer;border-radius:8px;transition:.2s}
+.pm-item:hover{background:rgba(255,255,255,.05)}
+.pm-item .pm-avatar{width:36px;height:36px;border-radius:50%;background:#2d1b4e;display:flex;align-items:center;justify-content:center;margin-right:10px;font-size:16px}
+.pm-item .pm-name{flex:1;font-size:14px}
+.pm-item .pm-unread{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+
+/* 弹窗 */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal{background:var(--card);border-radius:16px;padding:24px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto}
+.modal h3{margin-bottom:16px;color:var(--gold)}
+.modal .close-btn{float:right;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+
+/* 胜利/失败画面 */
+.game-over{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300;text-align:center;padding:20px}
+.game-over.good-wins{background:rgba(46,204,113,.9)}
+.game-over.evil-wins{background:rgba(192,57,43,.9)}
+.game-over h1{font-size:36px;margin-bottom:12px}
+.game-over p{font-size:18px;margin-bottom:30px;max-width:300px}
+
+/* 选人弹窗 */
+.pick-player{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+.pick-player .player-option{padding:8px 14px;border-radius:8px;cursor:pointer;background:#0f3460;border:1px solid #333;font-size:13px;transition:.2s}
+.pick-player .player-option:hover{border-color:var(--gold)}
+.pick-player .player-option.selected{border-color:var(--accent);background:rgba(233,69,96,.15)}
+
+/* 夜间信息展示 */
+.night-info-display{background:#2d1b4e;border-radius:8px;padding:12px;margin-top:12px;text-align:center;font-size:15px;color:#dda0dd}
+
+/* Toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--card);color:var(--text);padding:10px 20px;border-radius:8px;border:1px solid #333;z-index:400;font-size:14px;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* 滚动条 */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+
+@media(min-width:600px){
+  .player-token{width:80px}
+  .player-token .avatar{width:56px;height:56px}
+}
+</style>
+</head>
+<body>
+
+<!-- ====== 首页 ====== -->
+<div id="homePage" class="page">
+  <div class="logo">血染钟楼</div>
+  <div class="subtitle">暗流涌动 TROUBLE BREWING</div>
+  <div class="home-actions">
+    <div class="input-group">
+      <label>你的昵称</label>
+      <input type="text" id="nameInput" placeholder="输入昵称" maxlength="8">
+    </div>
+    <button class="btn btn-primary" onclick="showCreate()">创建房间（说书人）</button>
+    <div class="input-group" style="margin-top:8px">
+      <label>房间号</label>
+      <input type="text" id="roomCodeInput" placeholder="输入4位房间号" maxlength="4">
+    </div>
+    <button class="btn btn-secondary" onclick="joinRoom()">加入房间（玩家）</button>
+  </div>
+</div>
+
+<!-- ====== 大厅 ====== -->
+<div id="lobbyPage" class="page hidden">
+  <div class="room-header">
+    <div>
+      <div class="room-code-label">房间号</div>
+      <div class="room-code" id="lobbyRoomCode"></div>
+    </div>
+    <div class="player-count" id="playerCount">0/12 玩家</div>
+  </div>
+
+  <div class="player-list">
+    <h3>玩家列表</h3>
+    <div id="lobbyPlayerList"></div>
+  </div>
+
+  <!-- 说书人: 角色选择 -->
+  <div id="roleSelector" class="role-selector hidden">
+    <h3>选择角色 <span id="roleCountDisplay" style="float:right;color:var(--muted);font-weight:400"></span></h3>
+    <div style="margin-bottom:12px">
+      <button class="btn btn-gold btn-sm" onclick="autoSelect()">自动推荐</button>
+      <button class="btn btn-secondary btn-sm" onclick="clearRoles()">清空</button>
+    </div>
+    <div class="role-category">
+      <div class="role-category-title"><span>镇民 (善良)</span><span id="townsfolkCount">0</span></div>
+      <div class="role-grid" id="townsfolkGrid"></div>
+    </div>
+    <div class="role-category">
+      <div class="role-category-title"><span>外来者 (善良)</span><span id="outsiderCount">0</span></div>
+      <div class="role-grid" id="outsiderGrid"></div>
+    </div>
+    <div class="role-category">
+      <div class="role-category-title"><span>爪牙 (邪恶)</span><span id="minionCount">0</span></div>
+      <div class="role-grid" id="minionGrid"></div>
+    </div>
+    <div class="role-category">
+      <div class="role-category-title"><span>恶魔 (邪恶)</span><span id="demonCount">0</span></div>
+      <div class="role-grid" id="demonGrid"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="startGame()">开始游戏</button>
+  </div>
+
+  <!-- 玩家：等待 -->
+  <div id="waitingMsg" class="hidden" style="text-align:center;padding:30px;color:var(--muted)">
+    <div style="font-size:40px;margin-bottom:12px">⏳</div>
+    等待说书人开始游戏...
+  </div>
+</div>
+
+<!-- ====== 游戏主界面 ====== -->
+<div id="gamePage" class="hidden">
+  <div class="game-header">
+    <div>
+      <span class="phase-badge" id="phaseBadge">第1夜</span>
+    </div>
+    <div class="my-role">你是：<span id="myRoleDisplay">未知</span></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="town" onclick="switchTab('town')">小镇</div>
+    <div class="tab" data-tab="chat" onclick="switchTab('chat')">聊天</div>
+    <div class="tab" data-tab="pm" onclick="switchTab('pm')">私聊</div>
+    <div class="tab" data-tab="info" onclick="switchTab('info')">信息</div>
+    <div class="tab" data-tab="st" onclick="switchTab('st')" id="stTab" style="display:none">说书人</div>
+  </div>
+
+  <div class="game-content">
+    <!-- 小镇面板 -->
+    <div class="panel" id="townPanel">
+      <div class="player-circle" id="playerCircle"></div>
+      <div id="voteArea"></div>
+      <div id="nightDisplay"></div>
+    </div>
+
+    <!-- 聊天面板 -->
+    <div class="panel hidden" id="chatPanel">
+      <div class="chat-messages" id="chatMessages"></div>
+    </div>
+    <div class="chat-input hidden" id="chatInput">
+      <input type="text" id="chatMsgInput" placeholder="发消息..." maxlength="200">
+      <button class="btn btn-primary" onclick="sendChat()">发送</button>
+    </div>
+
+    <!-- 私聊面板 -->
+    <div class="panel hidden" id="pmPanel">
+      <div id="pmListView">
+        <div class="pm-list" id="pmList"></div>
+      </div>
+      <div id="pmChatView" class="hidden">
+        <div style="display:flex;align-items:center;padding:8px 0;margin-bottom:8px;border-bottom:1px solid #333">
+          <button class="btn btn-sm btn-secondary" onclick="closePmChat()" style="margin-right:8px">← 返回</button>
+          <span id="pmChatTarget" style="font-weight:700"></span>
+        </div>
+        <div class="chat-messages" id="pmMessages" style="height:calc(100vh - 250px)"></div>
+      </div>
+    </div>
+    <div class="chat-input hidden" id="pmInput">
+      <input type="text" id="pmMsgInput" placeholder="私聊消息..." maxlength="200">
+      <button class="btn btn-primary" onclick="sendPm()">发送</button>
+    </div>
+
+    <!-- 信息面板 -->
+    <div class="panel hidden" id="infoPanel">
+      <div id="roleInfoDisplay" style="padding:12px"></div>
+      <div id="evilInfoDisplay"></div>
+      <div id="nightInfoLog"></div>
+    </div>
+
+    <!-- 说书人面板 -->
+    <div class="panel hidden" id="stPanel">
+      <div class="grimoire" id="grimoirePanel"></div>
+      <div class="st-controls" id="stControls"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 游戏结束 -->
+<div id="gameOverScreen" class="game-over hidden">
+  <h1 id="gameOverTitle"></h1>
+  <p id="gameOverReason"></p>
+  <button class="btn btn-primary" onclick="location.reload()" style="font-size:18px;padding:14px 40px">返回首页</button>
+</div>
+
+<!-- 选人弹窗 -->
+<div id="pickModal" class="modal-overlay hidden">
+  <div class="modal">
+    <button class="close-btn" onclick="closePickModal()">×</button>
+    <h3 id="pickTitle">选择玩家</h3>
+    <p id="pickDesc" style="color:var(--muted);font-size:13px;margin-bottom:12px"></p>
+    <div class="pick-player" id="pickPlayerList"></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:12px" id="pickConfirmBtn" onclick="confirmPick()">确认</button>
+  </div>
+</div>
+
+<script>
+// ============== 全局状态 ==============
+const socket = io();
+let state = {
+  isStoryteller: false,
+  roomCode: null,
+  myName: '',
+  myRole: null,
+  phase: 'lobby',
+  players: [],      // {name, socketId, alive, role?}
+  grimoire: [],     // storyteller only
+  nightNum: 0,
+  dayNum: 0,
+  evilInfo: null,
+  nightInfos: [],
+  pmChats: {},      // targetId -> [messages]
+  currentPmTarget: null,
+  unreadPm: {},
+  selectedPicks: [],
+  pickCallback: null,
+  pickMax: 1,
+  currentTab: 'town',
+  hasVoted: false,
+};
+
+// ============== 角色数据 ==============
+const ROLES = {
+  townsfolk: [
+    {id:'washerwoman',name:'洗衣妇',team:'good',desc:'你会得知两名玩家中的一名是某个特定的镇民'},
+    {id:'librarian',name:'图书管理员',team:'good',desc:'你会得知两名玩家中的一名是某个特定的外来者'},
+    {id:'investigator',name:'调查员',team:'good',desc:'你会得知两名玩家中的一名是某个特定的爪牙'},
+    {id:'chef',name:'厨师',team:'good',desc:'你会得知有多少对邪恶玩家相邻而坐'},
+    {id:'empath',name:'共情者',team:'good',desc:'每个夜晚，得知相邻存活玩家中有多少是邪恶的'},
+    {id:'fortuneteller',name:'占卜师',team:'good',desc:'每个夜晚，选择两名玩家，得知其中是否有恶魔'},
+    {id:'monk',name:'僧侣',team:'good',desc:'每个夜晚，选择一名玩家保护其不被恶魔杀死'},
+    {id:'undertaker',name:'掘墓人',team:'good',desc:'每晚得知今天被处决玩家的角色'},
+    {id:'virgin',name:'处女',team:'good',desc:'第一次被镇民提名时，该镇民被处决'},
+    {id:'slayer',name:'杀手',team:'good',desc:'游戏中一次，可射击一名玩家，若是恶魔则死亡'},
+    {id:'soldier',name:'士兵',team:'good',desc:'你不会被恶魔杀死'},
+    {id:'mayor',name:'市长',team:'good',desc:'最后3人存活且无人处决时，善良获胜'},
+    {id:'ravenkeeper',name:'守鸦人',team:'good',desc:'如果你在夜晚死亡，选择一人得知其角色'},
+  ],
+  outsider: [
+    {id:'butler',name:'管家',team:'good',desc:'每晚选一名玩家，只有该玩家投票时你才能投票'},
+    {id:'drunk',name:'酒鬼',team:'good',desc:'你以为你是镇民但你不是，能力无效'},
+    {id:'recluse',name:'隐士',team:'good',desc:'你可能被探测为邪恶角色'},
+    {id:'saint',name:'圣徒',team:'good',desc:'如果你被处决，邪恶阵营获胜'},
+  ],
+  minion: [
+    {id:'poisoner',name:'下毒者',team:'evil',desc:'每晚选一名玩家使其中毒（能力无效）'},
+    {id:'spy',name:'间谍',team:'evil',desc:'每晚查看魔典，可能被探测为善良'},
+    {id:'baron',name:'男爵',team:'evil',desc:'场上多出两名外来者'},
+    {id:'scarletwoman',name:'猩红女郎',team:'evil',desc:'恶魔死亡且≥5人存活时，你变为恶魔'},
+  ],
+  demon: [
+    {id:'imp',name:'小鬼',team:'evil',desc:'每晚选一名玩家杀死。自杀则一名爪牙变为小鬼'},
+  ],
+};
+const ALL_ROLES = [...ROLES.townsfolk,...ROLES.outsider,...ROLES.minion,...ROLES.demon];
+function getRoleById(id){return ALL_ROLES.find(r=>r.id===id)}
+function getRoleEmoji(id){
+  const m={'washerwoman':'🧺','librarian':'📚','investigator':'🔍','chef':'👨‍🍳','empath':'💓','fortuneteller':'🔮','monk':'🙏','undertaker':'⚰️','virgin':'👰','slayer':'🔫','soldier':'🛡️','mayor':'🎩','ravenkeeper':'🐦','butler':'🤵','drunk':'🍺','recluse':'🏚️','saint':'😇','poisoner':'☠️','spy':'🕵️','baron':'👑','scarletwoman':'💃','imp':'👿'};
+  return m[id]||'❓';
+}
+
+// ============== 首页逻辑 ==============
+function showCreate(){
+  const name=document.getElementById('nameInput').value.trim();
+  if(!name) return toast('请输入昵称');
+  state.myName=name;
+  state.isStoryteller=true;
+  socket.emit('createRoom',name);
+}
+function joinRoom(){
+  const name=document.getElementById('nameInput').value.trim();
+  const code=document.getElementById('roomCodeInput').value.trim();
+  if(!name) return toast('请输入昵称');
+  if(!code||code.length!==4) return toast('请输入4位房间号');
+  state.myName=name;
+  socket.emit('joinRoom',{code,name});
+}
+
+// ============== Socket 事件 ==============
+
+socket.on('error',(msg)=>toast(msg));
+
+socket.on('roomCreated',({code})=>{
+  state.roomCode=code;
+  document.getElementById('homePage').classList.add('hidden');
+  document.getElementById('lobbyPage').classList.remove('hidden');
+  document.getElementById('lobbyRoomCode').textContent=code;
+  document.getElementById('roleSelector').classList.remove('hidden');
+  initRoleSelector();
+});
+
+socket.on('roomJoined',({code})=>{
+  state.roomCode=code;
+  document.getElementById('homePage').classList.add('hidden');
+  document.getElementById('lobbyPage').classList.remove('hidden');
+  document.getElementById('lobbyRoomCode').textContent=code;
+  document.getElementById('waitingMsg').classList.remove('hidden');
+});
+
+socket.on('playerList',({players,storyteller})=>{
+  state.players=players;
+  document.getElementById('playerCount').textContent=`${players.length}/12 玩家`;
+  const list=document.getElementById('lobbyPlayerList');
+  list.innerHTML=`<div class="player-item"><span class="name">${storyteller}</span><span class="badge" style="background:var(--accent)">说书人</span></div>`+
+    players.map(p=>`<div class="player-item"><span class="name">${p.name}</span></div>`).join('');
+  updateRoleCountDisplay();
+});
+
+// 角色选择
+let selectedRoles=[];
+function initRoleSelector(){
+  ['townsfolk','outsider','minion','demon'].forEach(type=>{
+    const grid=document.getElementById(type+'Grid');
+    grid.innerHTML=ROLES[type].map(r=>`<div class="role-chip ${r.team}" data-id="${r.id}" onclick="toggleRole('${r.id}')" title="${r.desc}">${getRoleEmoji(r.id)} ${r.name}</div>`).join('');
+  });
+}
+function toggleRole(id){
+  const i=selectedRoles.indexOf(id);
+  if(i>=0) selectedRoles.splice(i,1); else selectedRoles.push(id);
+  updateRoleChips();
+  socket.emit('selectRoles',{roles:selectedRoles});
+}
+function updateRoleChips(){
+  document.querySelectorAll('.role-chip').forEach(el=>{
+    el.classList.toggle('selected',selectedRoles.includes(el.dataset.id));
+  });
+  updateRoleCountDisplay();
+}
+function updateRoleCountDisplay(){
+  const counts={townsfolk:0,outsider:0,minion:0,demon:0};
+  selectedRoles.forEach(id=>{
+    const r=getRoleById(id);
+    if(r){
+      if(ROLES.townsfolk.some(x=>x.id===id)) counts.townsfolk++;
+      else if(ROLES.outsider.some(x=>x.id===id)) counts.outsider++;
+      else if(ROLES.minion.some(x=>x.id===id)) counts.minion++;
+      else if(ROLES.demon.some(x=>x.id===id)) counts.demon++;
+    }
+  });
+  document.getElementById('townsfolkCount').textContent=counts.townsfolk;
+  document.getElementById('outsiderCount').textContent=counts.outsider;
+  document.getElementById('minionCount').textContent=counts.minion;
+  document.getElementById('demonCount').textContent=counts.demon;
+  const total=selectedRoles.length;
+  const needed=state.players.length;
+  document.getElementById('roleCountDisplay').textContent=`已选 ${total}/${needed}`;
+}
+function autoSelect(){socket.emit('autoSelectRoles')}
+function clearRoles(){selectedRoles=[];updateRoleChips();socket.emit('selectRoles',{roles:[]})}
+socket.on('rolesSelected',(roles)=>{selectedRoles=roles;updateRoleChips()});
+function startGame(){socket.emit('startGame')}
+
+// ============== 游戏开始 ==============
+socket.on('gameStarted',(data)=>{
+  document.getElementById('lobbyPage').classList.add('hidden');
+  document.getElementById('gamePage').classList.remove('hidden');
+
+  if(data.isStoryteller){
+    state.isStoryteller=true;
+    state.grimoire=data.grimoire;
+    document.getElementById('stTab').style.display='';
+    document.getElementById('myRoleDisplay').textContent='说书人';
+    updateGrimoire();
+  } else {
+    state.myRole=data.role;
+    document.getElementById('myRoleDisplay').textContent=`${getRoleEmoji(data.role.id)} ${data.role.name}`;
+    showRoleInfo();
+  }
+  state.phase=data.phase;
+  state.nightNum=data.nightNum||1;
+  updatePhaseBadge();
+  updatePlayerCircle();
+  initPmList();
+  showNightDisplay();
+});
+
+socket.on('evilReveal',(data)=>{
+  state.evilInfo=data;
+  if(state.currentTab==='info') showInfoPanel();
+});
+
+// ============== 阶段切换 ==============
+socket.on('phaseChange',(data)=>{
+  state.phase=data.phase;
+  if(data.phase==='night'){
+    state.nightNum=data.nightNum;
+    state.hasVoted=false;
+    showNightDisplay();
+  } else {
+    state.dayNum=data.dayNum;
+    if(data.deaths&&data.deaths.length>0){
+      addSystemMsg(`☀️ 天亮了！昨晚死亡：${data.deaths.join('、')}`);
+    } else {
+      addSystemMsg('☀️ 天亮了！昨晚无人死亡。');
+    }
+    if(data.alivePlayers){
+      data.alivePlayers.forEach(p=>{
+        const existing=state.players.find(x=>x.name===p.name);
+        if(existing) existing.alive=p.alive;
+      });
+    }
+    showDayDisplay();
+  }
+  updatePhaseBadge();
+  updatePlayerCircle();
+  if(state.isStoryteller) updateStControls();
+});
+
+function updatePhaseBadge(){
+  const badge=document.getElementById('phaseBadge');
+  if(state.phase==='night'){
+    badge.className='phase-badge phase-night';
+    badge.textContent=`第${state.nightNum}夜 🌙`;
+  } else {
+    badge.className='phase-badge phase-day';
+    badge.textContent=`第${state.dayNum}天 ☀️`;
+  }
+}
+
+// ============== 小镇面板 ==============
+function updatePlayerCircle(){
+  const circle=document.getElementById('playerCircle');
+  const players=state.isStoryteller?state.grimoire:state.players;
+  circle.innerHTML=players.map(p=>{
+    const alive=p.alive!==undefined?p.alive:true;
+    const roleInfo=state.isStoryteller&&p.role?`<div class="prole">${getRoleEmoji(p.role.id)} ${p.role.name}</div>`:'';
+    const evilClass=state.isStoryteller&&p.role&&p.role.team==='evil'?'evil-glow':'';
+    const deadMark=alive?'':'<div class="dead-mark">💀</div>';
+    return `<div class="player-token" onclick="onPlayerClick('${p.socketId||p.id}')">
+      <div class="avatar ${alive?'alive':'dead'} ${evilClass}">${deadMark}${p.name[0]}</div>
+      <div class="pname">${p.name}</div>
+      ${roleInfo}
+    </div>`;
+  }).join('');
+}
+
+function onPlayerClick(playerId){
+  if(state.isStoryteller&&state.phase==='night'){
+    showStPlayerActions(playerId);
+  } else if(state.phase==='day'&&!state.isStoryteller){
+    showPlayerDayActions(playerId);
+  }
+}
+
+function showStPlayerActions(playerId){
+  const p=state.grimoire.find(x=>x.socketId===playerId);
+  if(!p) return;
+  const actions=[
+    {label:'唤醒此玩家',action:()=>{socket.emit('wakePlayer',{targetId:playerId});toast(`已唤醒 ${p.name}`)}},
+    {label:'让此玩家睡去',action:()=>{socket.emit('sleepPlayer',{targetId:playerId});toast(`${p.name} 已睡去`)}},
+    {label:'发送夜间信息',action:()=>showSendInfoModal(playerId,p.name)},
+    p.alive?
+      {label:'杀死此玩家',action:()=>{socket.emit('killPlayer',{targetId:playerId})}}:
+      {label:'复活此玩家',action:()=>{socket.emit('revivePlayer',{targetId:playerId})}},
+  ];
+  showActionMenu(p.name,actions);
+}
+
+function showPlayerDayActions(playerId){
+  const p=state.players.find(x=>(x.socketId||x.id)===playerId);
+  if(!p) return;
+  const actions=[
+    {label:'提名此玩家',action:()=>{socket.emit('nominate',{targetId:playerId})}},
+    {label:'私聊',action:()=>{openPmChat(playerId,p.name)}},
+  ];
+  if(state.myRole&&state.myRole.id==='slayer'){
+    actions.push({label:'🔫 杀手射击',action:()=>{socket.emit('slayerShot',{targetId:playerId})}});
+  }
+  showActionMenu(p.name,actions);
+}
+
+function showActionMenu(title,actions){
+  const modal=document.getElementById('pickModal');
+  document.getElementById('pickTitle').textContent=title;
+  document.getElementById('pickDesc').textContent='选择操作';
+  const list=document.getElementById('pickPlayerList');
+  list.innerHTML=actions.map((a,i)=>`<div class="player-option" onclick="document.getElementById('pickModal').classList.add('hidden');(${JSON.stringify(i)})" style="width:100%;text-align:center">${a.label}</div>`).join('');
+  // Bind click handlers properly
+  list.innerHTML='';
+  actions.forEach(a=>{
+    const btn=document.createElement('div');
+    btn.className='player-option';
+    btn.style.cssText='width:100%;text-align:center';
+    btn.textContent=a.label;
+    btn.onclick=()=>{modal.classList.add('hidden');a.action()};
+    list.appendChild(btn);
+  });
+  document.getElementById('pickConfirmBtn').style.display='none';
+  modal.classList.remove('hidden');
+}
+
+function showSendInfoModal(playerId,name){
+  const modal=document.getElementById('pickModal');
+  document.getElementById('pickTitle').textContent=`发送信息给 ${name}`;
+  document.getElementById('pickDesc').textContent='输入要发送的夜间信息';
+  const list=document.getElementById('pickPlayerList');
+  list.innerHTML=`<input type="text" id="nightInfoInput" placeholder="例如：你的信息是 0" style="width:100%">`;
+  const btn=document.getElementById('pickConfirmBtn');
+  btn.style.display='';
+  btn.onclick=()=>{
+    const info=document.getElementById('nightInfoInput').value.trim();
+    if(info){socket.emit('sendNightInfo',{targetId:playerId,info});toast(`已发送给 ${name}`);modal.classList.add('hidden')}
+  };
+  modal.classList.remove('hidden');
+}
+
+function closePickModal(){document.getElementById('pickModal').classList.add('hidden')}
+
+// ============== 夜晚显示 ==============
+function showNightDisplay(){
+  const area=document.getElementById('nightDisplay');
+  if(state.isStoryteller){
+    area.innerHTML=`<div class="night-panel"><div class="moon">🌙</div><h2>第${state.nightNum}夜</h2><p>点击玩家头像来唤醒/操作</p></div>`;
+  } else {
+    area.innerHTML=`<div class="night-panel"><div class="moon">🌙</div><h2>第${state.nightNum}夜</h2><p>闭上你的眼睛...等待说书人唤醒你</p><div id="nightActionArea"></div></div>`;
+  }
+  document.getElementById('voteArea').innerHTML='';
+}
+
+function showDayDisplay(){
+  document.getElementById('nightDisplay').innerHTML='';
+  document.getElementById('voteArea').innerHTML='';
+}
+
+// 被唤醒
+socket.on('woken',({role})=>{
+  const area=document.getElementById('nightActionArea');
+  if(!area) return;
+  const r=getRoleById(role.id);
+  area.innerHTML=`<div class="night-action"><h4>${getRoleEmoji(role.id)} ${role.name}，你醒了</h4><p style="color:var(--muted);font-size:13px;margin-bottom:12px">${r?r.desc:''}</p>
+    <div id="nightActionChoices"></div></div>`;
+  showNightActionUI(role.id);
+  toast('说书人唤醒了你！');
+});
+
+function showNightActionUI(roleId){
+  const choices=document.getElementById('nightActionChoices');
+  if(!choices) return;
+  const alivePlayers=state.players.filter(p=>p.alive!==false);
+
+  // 需要选择玩家的角色
+  const selectRoles=['poisoner','monk','fortuneteller','butler','imp'];
+  const selectTwo=['fortuneteller'];
+
+  if(selectRoles.includes(roleId)){
+    const max=selectTwo.includes(roleId)?2:1;
+    const label=max===2?'选择两名玩家':'选择一名玩家';
+    let selected=[];
+    choices.innerHTML=`<p style="margin-bottom:8px">${label}：</p>
+      <div class="pick-player" id="nightPicks"></div>
+      <button class="btn btn-primary btn-sm" style="margin-top:8px" id="submitNightAction">提交</button>`;
+    const picks=document.getElementById('nightPicks');
+    alivePlayers.forEach(p=>{
+      const opt=document.createElement('div');
+      opt.className='player-option';
+      opt.textContent=p.name;
+      opt.onclick=()=>{
+        const id=p.socketId||p.id;
+        const idx=selected.indexOf(id);
+        if(idx>=0){selected.splice(idx,1);opt.classList.remove('selected')}
+        else if(selected.length<max){selected.push(id);opt.classList.add('selected')}
+      };
+      picks.appendChild(opt);
+    });
+    document.getElementById('submitNightAction').onclick=()=>{
+      if(selected.length===0) return toast('请选择玩家');
+      socket.emit('nightAction',{action:roleId,targets:selected});
+      choices.innerHTML='<p style="color:var(--green)">✓ 已提交，等待说书人...</p>';
+    };
+  } else {
+    choices.innerHTML='<p style="color:var(--muted)">等待说书人提供信息...</p>';
+  }
+}
+
+socket.on('nightInfo',({info})=>{
+  state.nightInfos.push({night:state.nightNum,info});
+  const display=document.getElementById('nightActionArea');
+  if(display){
+    const existing=display.querySelector('.night-info-display');
+    if(existing) existing.remove();
+    display.innerHTML+=`<div class="night-info-display">📜 说书人的信息：${info}</div>`;
+  }
+  toast('收到说书人的信息！');
+});
+
+socket.on('slept',()=>{
+  const area=document.getElementById('nightActionArea');
+  if(area) area.innerHTML='<div class="night-panel" style="padding:16px"><p>💤 你已睡去...</p></div>';
+});
+
+// 说书人收到夜间行动
+socket.on('nightActionReceived',(data)=>{
+  toast(`${data.playerName}(${getRoleById(data.role)?.name||data.role}) 选择了：${data.targets.join('、')}`);
+});
+
+// ============== 提名与投票 ==============
+socket.on('nominationStarted',({nominator,target,targetId,aliveCount})=>{
+  addSystemMsg(`📢 ${nominator} 提名了 ${target}！`);
+  state.hasVoted=false;
+  const threshold=Math.ceil(aliveCount/2);
+  const voteArea=document.getElementById('voteArea');
+
+  if(state.isStoryteller){
+    voteArea.innerHTML=`<div class="vote-panel"><h3>投票：处决 ${target}？</h3>
+      <p style="color:var(--muted);font-size:13px">需要 ${threshold} 票通过</p>
+      <div id="voteProgress" style="margin-top:8px"></div>
+      <button class="btn btn-gold" style="width:100%;margin-top:12px" onclick="socket.emit('endVote')">结束投票 & 公布结果</button></div>`;
+  } else {
+    voteArea.innerHTML=`<div class="vote-panel"><h3>投票：处决 ${target}？</h3>
+      <p style="color:var(--muted);font-size:13px">需要 ${threshold} 票通过</p>
+      <div class="vote-buttons"><button class="btn btn-success" onclick="castVote(true)">👍 赞成</button>
+      <button class="btn btn-danger" onclick="castVote(false)">👎 反对</button></div>
+      <div id="myVoteStatus"></div></div>`;
+  }
+});
+
+function castVote(vote){
+  if(state.hasVoted) return;
+  state.hasVoted=true;
+  socket.emit('vote',{vote});
+  document.getElementById('myVoteStatus').innerHTML=`<p style="text-align:center;margin-top:8px;color:var(--muted)">你投了 ${vote?'赞成':'反对'}，等待结果...</p>`;
+}
+
+socket.on('voteProgress',({player,vote,totalVotes})=>{
+  const prog=document.getElementById('voteProgress');
+  if(prog){
+    prog.innerHTML+=`<div style="font-size:13px;padding:2px 0">${player}: ${vote?'👍 赞成':'👎 反对'}</div>`;
+  }
+});
+
+socket.on('voteResult',(result)=>{
+  const msg=result.passed?
+    `⚖️ 投票通过！${result.target} 将被处决（${result.yesVotes}/${result.threshold}票）`:
+    `⚖️ 投票未通过，${result.target} 存活（${result.yesVotes}/${result.threshold}票）`;
+  addSystemMsg(msg);
+
+  if(state.isStoryteller&&result.passed){
+    document.getElementById('voteArea').innerHTML=`<div class="vote-panel"><h3>确认处决 ${result.target}？</h3>
+      <button class="btn btn-danger" style="width:100%" onclick="socket.emit('execute')">执行处决</button></div>`;
+  } else {
+    document.getElementById('voteArea').innerHTML='';
+  }
+});
+
+socket.on('playerExecuted',({name,alivePlayers})=>{
+  addSystemMsg(`💀 ${name} 被处决了！`);
+  updateAliveStatus(alivePlayers);
+  document.getElementById('voteArea').innerHTML='';
+});
+
+socket.on('playerDied',({name,alivePlayers})=>{
+  addSystemMsg(`💀 ${name} 死亡了！`);
+  updateAliveStatus(alivePlayers);
+});
+
+socket.on('playerRevived',({name,alivePlayers})=>{
+  addSystemMsg(`✨ ${name} 复活了！`);
+  updateAliveStatus(alivePlayers);
+});
+
+function updateAliveStatus(alivePlayers){
+  alivePlayers.forEach(p=>{
+    const existing=state.players.find(x=>(x.socketId||x.id)===p.socketId);
+    if(existing) existing.alive=p.alive;
+    if(state.isStoryteller){
+      const g=state.grimoire.find(x=>x.socketId===p.socketId);
+      if(g) g.alive=p.alive;
+    }
+  });
+  updatePlayerCircle();
+  if(state.isStoryteller) updateGrimoire();
+}
+
+// ============== 聊天 ==============
+socket.on('chatMessage',(msg)=>{
+  const div=document.createElement('div');
+  div.className='chat-msg';
+  div.innerHTML=`<span class="time">${msg.time}</span><span class="sender ${msg.isStoryteller?'storyteller':''}">${msg.from}${msg.isStoryteller?' (说书人)':''}</span>${escapeHtml(msg.message)}`;
+  document.getElementById('chatMessages').appendChild(div);
+  document.getElementById('chatMessages').scrollTop=99999;
+  if(state.currentTab!=='chat'){
+    document.querySelector('[data-tab="chat"]').innerHTML='聊天 <span class="badge-dot"></span>';
+  }
+});
+
+function addSystemMsg(text){
+  const div=document.createElement('div');
+  div.className='chat-msg system';
+  div.textContent=text;
+  document.getElementById('chatMessages').appendChild(div);
+  document.getElementById('chatMessages').scrollTop=99999;
+}
+
+function sendChat(){
+  const input=document.getElementById('chatMsgInput');
+  const msg=input.value.trim();
+  if(!msg) return;
+  socket.emit('chatMessage',{message:msg});
+  input.value='';
+}
+
+// ============== 私聊 ==============
+function initPmList(){
+  const list=document.getElementById('pmList');
+  const targets=state.isStoryteller?
+    state.grimoire.map(p=>({id:p.socketId,name:p.name})):
+    [{id:'storyteller',name:'说书人'},...state.players.filter(p=>(p.socketId||p.id)!==socket.id).map(p=>({id:p.socketId||p.id,name:p.name}))];
+
+  list.innerHTML=targets.map(t=>`<div class="pm-item" onclick="openPmChat('${t.id}','${t.name}')">
+    <div class="pm-avatar">${t.name[0]}</div>
+    <div class="pm-name">${t.name}</div>
+    <div class="pm-unread hidden" id="unread-${t.id}"></div>
+  </div>`).join('');
+}
+
+function openPmChat(targetId,name){
+  state.currentPmTarget=targetId;
+  state.unreadPm[targetId]=false;
+  const unread=document.getElementById('unread-'+targetId);
+  if(unread) unread.classList.add('hidden');
+
+  document.getElementById('pmListView').classList.add('hidden');
+  document.getElementById('pmChatView').classList.remove('hidden');
+  document.getElementById('pmInput').classList.remove('hidden');
+  document.getElementById('pmChatTarget').textContent=name;
+
+  const msgs=document.getElementById('pmMessages');
+  msgs.innerHTML='';
+  (state.pmChats[targetId]||[]).forEach(m=>appendPmMsg(m));
+  msgs.scrollTop=99999;
+
+  if(state.currentTab!=='pm') switchTab('pm');
+}
+
+function closePmChat(){
+  state.currentPmTarget=null;
+  document.getElementById('pmListView').classList.remove('hidden');
+  document.getElementById('pmChatView').classList.add('hidden');
+  document.getElementById('pmInput').classList.add('hidden');
+}
+
+function sendPm(){
+  const input=document.getElementById('pmMsgInput');
+  const msg=input.value.trim();
+  if(!msg||!state.currentPmTarget) return;
+  socket.emit('privateMessage',{targetId:state.currentPmTarget,message:msg});
+  input.value='';
+}
+
+socket.on('privateMessage',(msg)=>{
+  const otherId=msg.fromId===socket.id?msg.toId:msg.fromId;
+  if(!state.pmChats[otherId]) state.pmChats[otherId]=[];
+  state.pmChats[otherId].push(msg);
+
+  if(state.currentPmTarget===otherId){
+    appendPmMsg(msg);
+    document.getElementById('pmMessages').scrollTop=99999;
+  } else {
+    state.unreadPm[otherId]=true;
+    const unread=document.getElementById('unread-'+otherId);
+    if(unread) unread.classList.remove('hidden');
+    if(state.currentTab!=='pm'){
+      document.querySelector('[data-tab="pm"]').innerHTML='私聊 <span class="badge-dot"></span>';
+    }
+  }
+});
+
+socket.on('privateMessageSpy',(msg)=>{
+  // 说书人看到所有私聊
+  const key=`spy-${msg.fromId}-${msg.toId}`;
+  toast(`[私聊窃听] ${msg.from} → ${msg.to}: ${msg.message}`);
+});
+
+function appendPmMsg(msg){
+  const div=document.createElement('div');
+  div.className='chat-msg private';
+  const isMe=msg.fromId===socket.id;
+  div.innerHTML=`<span class="time">${msg.time}</span><span class="sender">${isMe?'我':msg.from}</span>${escapeHtml(msg.message)}`;
+  document.getElementById('pmMessages').appendChild(div);
+}
+
+// ============== 信息面板 ==============
+function showRoleInfo(){
+  const panel=document.getElementById('roleInfoDisplay');
+  if(!state.myRole){panel.innerHTML='<p>等待分配角色...</p>';return}
+  const r=state.myRole;
+  panel.innerHTML=`<div style="text-align:center;margin-bottom:16px">
+    <div style="font-size:48px">${getRoleEmoji(r.id)}</div>
+    <h2 style="color:${r.team==='evil'?'var(--evil)':'var(--good)'}">${r.name}</h2>
+    <p style="color:var(--muted);font-size:13px">${r.team==='evil'?'邪恶阵营':'善良阵营'} · ${r.type==='townsfolk'?'镇民':r.type==='outsider'?'外来者':r.type==='minion'?'爪牙':'恶魔'}</p>
+  </div>
+  <div style="background:var(--card);padding:16px;border-radius:12px;margin-bottom:16px">
+    <h4 style="color:var(--gold);margin-bottom:8px">技能说明</h4>
+    <p style="font-size:14px;line-height:1.6">${r.desc}</p>
+  </div>`;
+}
+
+function showInfoPanel(){
+  showRoleInfo();
+  const evilDiv=document.getElementById('evilInfoDisplay');
+  if(state.evilInfo){
+    let html='<div style="background:#2d1b1b;padding:16px;border-radius:12px;margin:0 12px 16px">';
+    html+='<h4 style="color:var(--evil);margin-bottom:8px">邪恶阵营信息</h4>';
+    state.evilInfo.evilPlayers.forEach(p=>{
+      html+=`<p style="font-size:14px">${p.name} — ${p.role}</p>`;
+    });
+    if(state.evilInfo.bluffs){
+      html+='<h4 style="color:var(--gold);margin:12px 0 8px">可用伪装（不在场角色）</h4>';
+      state.evilInfo.bluffs.forEach(b=>{
+        html+=`<p style="font-size:14px">· ${b}</p>`;
+      });
+    }
+    html+='</div>';
+    evilDiv.innerHTML=html;
+  }
+  const logDiv=document.getElementById('nightInfoLog');
+  if(state.nightInfos.length>0){
+    let html='<div style="background:var(--card);padding:16px;border-radius:12px;margin:0 12px">';
+    html+='<h4 style="color:#7b68ee;margin-bottom:8px">夜间信息记录</h4>';
+    state.nightInfos.forEach(n=>{
+      html+=`<p style="font-size:13px;padding:4px 0;border-bottom:1px solid #333">第${n.night}夜：${n.info}</p>`;
+    });
+    html+='</div>';
+    logDiv.innerHTML=html;
+  }
+}
+
+// ============== 说书人面板 ==============
+function updateGrimoire(){
+  const panel=document.getElementById('grimoirePanel');
+  let html='<h3>📖 魔典</h3>';
+  state.grimoire.forEach(p=>{
+    const role=p.role;
+    const teamClass=role.team==='evil'?'evil':'good';
+    const statusClass=p.alive?'alive':'dead';
+    html+=`<div class="grimoire-item">
+      <span>${p.name}</span>
+      <span class="role-tag ${teamClass}">${getRoleEmoji(role.id)} ${role.name}</span>
+      <span class="status ${statusClass}">${p.alive?'存活':'死亡'}</span>
+    </div>`;
+  });
+  panel.innerHTML=html;
+}
+
+function updateStControls(){
+  const ctrl=document.getElementById('stControls');
+  if(state.phase==='night'){
+    ctrl.innerHTML=`<h3>🌙 夜晚操作</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px">点击上方玩家头像来唤醒/操作</p>
+      <div id="nightDeaths" style="margin-bottom:12px">
+        <h4 style="font-size:13px;margin-bottom:6px">今夜死亡玩家：</h4>
+        <div class="pick-player" id="deathPicks"></div>
+      </div>
+      <button class="btn btn-gold" style="width:100%" onclick="endNight()">结束夜晚 → 进入白天</button>`;
+    renderDeathPicks();
+  } else {
+    ctrl.innerHTML=`<h3>☀️ 白天操作</h3>
+      <div class="st-btn-grid">
+        <button class="btn btn-primary btn-sm" onclick="socket.emit('startNight')">进入夜晚</button>
+        <button class="btn btn-success btn-sm" onclick="socket.emit('endGame',{winner:'good',reason:'说书人判定：善良阵营获胜！'})">善良获胜</button>
+        <button class="btn btn-danger btn-sm" onclick="socket.emit('endGame',{winner:'evil',reason:'说书人判定：邪恶阵营获胜！'})">邪恶获胜</button>
+      </div>`;
+  }
+}
+
+let nightDeathSelections=[];
+function renderDeathPicks(){
+  const picks=document.getElementById('deathPicks');
+  if(!picks) return;
+  picks.innerHTML='';
+  state.grimoire.filter(p=>p.alive).forEach(p=>{
+    const opt=document.createElement('div');
+    opt.className='player-option'+(nightDeathSelections.includes(p.socketId)?' selected':'');
+    opt.textContent=p.name;
+    opt.onclick=()=>{
+      const idx=nightDeathSelections.indexOf(p.socketId);
+      if(idx>=0) nightDeathSelections.splice(idx,1); else nightDeathSelections.push(p.socketId);
+      renderDeathPicks();
+    };
+    picks.appendChild(opt);
+  });
+}
+
+function endNight(){
+  socket.emit('endNight',{deaths:nightDeathSelections});
+  nightDeathSelections=[];
+}
+
+// ============== 特殊事件 ==============
+socket.on('slayerUsed',({shooter,target})=>{
+  addSystemMsg(`🔫 ${shooter} 对 ${target} 使用了杀手技能！`);
+});
+socket.on('slayerShotPending',({shooter,shooterId,target,targetId,targetIsDemon})=>{
+  const voteArea=document.getElementById('voteArea');
+  voteArea.innerHTML=`<div class="vote-panel"><h3>🔫 ${shooter} 射击了 ${target}</h3>
+    <p style="color:var(--muted);font-size:13px">目标${targetIsDemon?'是':'不是'}恶魔</p>
+    <div class="vote-buttons">
+      <button class="btn btn-danger" onclick="socket.emit('confirmSlayerShot',{targetId:'${targetId}',success:true});this.parentElement.parentElement.remove()">击杀</button>
+      <button class="btn btn-secondary" onclick="socket.emit('confirmSlayerShot',{targetId:'${targetId}',success:false});this.parentElement.parentElement.remove()">未击杀</button>
+    </div></div>`;
+});
+socket.on('slayerKill',({target,alivePlayers})=>{
+  addSystemMsg(`🔫💀 ${target} 被杀手击杀了！`);
+  updateAliveStatus(alivePlayers);
+});
+socket.on('slayerMiss',({target})=>{
+  addSystemMsg(`🔫 杀手射击了 ${target}，但什么也没发生...`);
+});
+socket.on('becameDemon',()=>{
+  state.myRole=getRoleById('imp');
+  document.getElementById('myRoleDisplay').textContent='👿 小鬼 (猩红女郎转化)';
+  toast('猩红女郎触发！你现在是小鬼了！');
+});
+socket.on('demonChanged',({newDemon})=>{
+  toast(`猩红女郎触发：${newDemon} 变为了新的小鬼`);
+  updateGrimoire();
+});
+
+// ============== 游戏结束 ==============
+socket.on('gameOver',({winner,reason})=>{
+  const screen=document.getElementById('gameOverScreen');
+  screen.className=`game-over ${winner==='good'?'good-wins':'evil-wins'}`;
+  document.getElementById('gameOverTitle').textContent=winner==='good'?'善良阵营获胜！':'邪恶阵营获胜！';
+  document.getElementById('gameOverReason').textContent=reason;
+  screen.classList.remove('hidden');
+});
+
+socket.on('storytellerLeft',()=>{toast('说书人已断开连接！');});
+socket.on('playerDisconnected',({name})=>{addSystemMsg(`⚠️ ${name} 断开了连接`);});
+
+// ============== Tab切换 ==============
+function switchTab(tab){
+  state.currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.classList.toggle('active',t.dataset.tab===tab);
+    if(t.dataset.tab===tab) t.innerHTML=t.dataset.tab==='town'?'小镇':t.dataset.tab==='chat'?'聊天':t.dataset.tab==='pm'?'私聊':t.dataset.tab==='info'?'信息':'说书人';
+  });
+  ['townPanel','chatPanel','pmPanel','infoPanel','stPanel'].forEach(id=>{
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('chatInput').classList.add('hidden');
+  document.getElementById('pmInput').classList.add('hidden');
+
+  switch(tab){
+    case 'town':document.getElementById('townPanel').classList.remove('hidden');break;
+    case 'chat':
+      document.getElementById('chatPanel').classList.remove('hidden');
+      document.getElementById('chatInput').classList.remove('hidden');
+      document.getElementById('chatMessages').scrollTop=99999;
+      break;
+    case 'pm':
+      document.getElementById('pmPanel').classList.remove('hidden');
+      if(state.currentPmTarget) document.getElementById('pmInput').classList.remove('hidden');
+      break;
+    case 'info':
+      document.getElementById('infoPanel').classList.remove('hidden');
+      showInfoPanel();
+      break;
+    case 'st':
+      document.getElementById('stPanel').classList.remove('hidden');
+      updateGrimoire();
+      updateStControls();
+      break;
+  }
+}
+
+// ============== 工具函数 ==============
+function escapeHtml(s){
+  const d=document.createElement('div');d.textContent=s;return d.innerHTML;
+}
+function toast(msg){
+  const t=document.createElement('div');t.className='toast';t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
+
+// Enter键发送
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(document.activeElement===document.getElementById('chatMsgInput')) sendChat();
+    if(document.activeElement===document.getElementById('pmMsgInput')) sendPm();
+    if(document.activeElement===document.getElementById('roomCodeInput')) joinRoom();
+  }
+});
+</script>
+</body>
+</html>
